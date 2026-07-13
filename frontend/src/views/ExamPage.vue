@@ -3,7 +3,6 @@
     <header class="exam-header">
       <div>
         <h1>{{ payload.student.full_name }}</h1>
-        <p>{{ payload.student.subject_name }} / {{ payload.student.level_name }}</p>
       </div>
       <div v-if="!isMental" class="timer" :class="{ danger: remainingSeconds < 300 }">{{ formattedTime }}</div>
       <div v-else class="timer mental-timer" :class="{ danger: remainingSeconds < 60 }">
