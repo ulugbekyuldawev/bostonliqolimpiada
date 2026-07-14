@@ -120,6 +120,50 @@
     </div>
 
     <div v-if="mainAdmin" class="panel mt">
+      <h3>Word (.docx) fayl orqali savollarni ommaviy yuklash</h3>
+      <form @submit.prevent="uploadDocx" class="form-grid create-docx-grid">
+        <label>Fan
+          <select v-model="docxForm.subject" required @change="onDocxSubjectChange">
+            <option value="">Tanlang</option>
+            <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </label>
+        <label>Daraja
+          <select v-model="docxForm.level" required>
+            <option value="">Tanlang</option>
+            <option v-for="l in docxFilteredLevels" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+        </label>
+        <label class="full-span">Word fayl (.docx)
+          <input type="file" accept=".docx" @change="onDocxFileChange" required />
+        </label>
+        <button class="primary-btn" :disabled="docxUploading">{{ docxUploading ? 'Yuklanmoqda...' : 'Faylni yuklash' }}</button>
+      </form>
+      <p v-if="docxMessage" class="success-box">{{ docxMessage }}</p>
+      <p v-if="docxErrorList.length" class="error-box">
+        {{ docxErrorList.length }} ta savolda muammo bor:
+        <br />
+        <span v-for="(err, idx) in docxErrorList" :key="idx">{{ err }}<br /></span>
+      </p>
+      <p v-if="docxError" class="error-box">{{ docxError }}</p>
+      <div class="hint-box mt">
+        <b>Word fayl formati namunasi:</b><br />
+        1. Savol matni?<br />
+        A) variant matni<br />
+        B) variant matni<br />
+        C) variant matni<br />
+        D) variant matni<br />
+        Javob: B<br /><br />
+        Yoki barcha savollardan keyin alohida javoblar bloki:<br />
+        Javoblar:<br />
+        1. B<br />
+        2. C<br />
+        <br />
+        3 variantli savollar ham qo‘llab-quvvatlanadi (D variantini yozmasa ham bo‘ladi).
+      </div>
+    </div>
+
+    <div v-if="mainAdmin" class="panel mt">
       <h3>Yangi savol qo‘shish</h3>
       <form @submit.prevent="createQuestion" class="form-grid create-question-grid">
         <label>Fan
@@ -192,6 +236,13 @@ const levelForm = reactive({ subject: '', name: '', duration_minutes: 30 })
 const levelMessage = ref('')
 const levelError = ref('')
 
+const docxForm = reactive({ subject: '', level: '' })
+const docxFile = ref(null)
+const docxUploading = ref(false)
+const docxMessage = ref('')
+const docxError = ref('')
+const docxErrorList = ref([])
+
 const questionCountsBySubject = computed(() => {
   const counts = new Map()
   questions.value.forEach(q => {
@@ -239,6 +290,8 @@ const activeLevel = computed(() => levels.value.find(l => Number(l.id) === Numbe
 const selectedQuestions = computed(() => questions.value.filter(q => Number(q.level) === Number(activeLevelId.value)))
 
 const filteredLevels = computed(() => levels.value.filter(l => String(l.subject) === String(form.subject)))
+
+const docxFilteredLevels = computed(() => levels.value.filter(l => String(l.subject) === String(docxForm.subject)))
 
 function selectSubject(subjectId) {
   activeSubjectId.value = Number(subjectId)
@@ -321,6 +374,47 @@ async function createLevel() {
     await loadData()
   } catch (e) {
     levelError.value = JSON.stringify(e.response?.data || 'Daraja qo‘shishda xatolik yuz berdi.')
+  }
+}
+
+function onDocxSubjectChange() {
+  docxForm.level = ''
+}
+
+function onDocxFileChange(event) {
+  docxFile.value = event.target.files[0] || null
+  docxMessage.value = ''
+  docxError.value = ''
+  docxErrorList.value = []
+}
+
+async function uploadDocx() {
+  if (!docxFile.value) {
+    docxError.value = 'Iltimos, .docx fayl tanlang.'
+    return
+  }
+  docxUploading.value = true
+  docxMessage.value = ''
+  docxError.value = ''
+  docxErrorList.value = []
+
+  const formData = new FormData()
+  formData.append('subject', docxForm.subject)
+  formData.append('level', docxForm.level)
+  formData.append('file', docxFile.value)
+
+  try {
+    const res = await api.post('/questions/import-docx/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    docxMessage.value = res.data.message || `${res.data.created_count} ta savol qo‘shildi.`
+    docxErrorList.value = res.data.errors || []
+    await loadData()
+  } catch (e) {
+    docxError.value = e.response?.data?.detail || JSON.stringify(e.response?.data || 'Faylni yuklashda xatolik yuz berdi.')
+    docxErrorList.value = e.response?.data?.errors || []
+  } finally {
+    docxUploading.value = false
   }
 }
 
@@ -515,9 +609,15 @@ onMounted(loadData)
   align-items: end;
 }
 
+.create-docx-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
 @media (max-width: 700px) {
   .create-subject-grid,
-  .create-level-grid {
+  .create-level-grid,
+  .create-docx-grid {
     grid-template-columns: 1fr;
   }
 }

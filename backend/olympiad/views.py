@@ -1,5 +1,6 @@
 from datetime import timedelta
 import random
+import re
 from io import BytesIO
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,6 +11,7 @@ from django.utils import timezone
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from docx import Document as DocxDocument
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -677,6 +679,127 @@ class StudentViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename="barcha_oquvchilar.xlsx"'
         return response
 
+def parse_docx_questions(lines):
+    """
+    Word fayldan savollarni ajratib oladi. Qo'llab-quvvatlanadigan format:
+
+    1. Savol matni?
+    A) variant 1
+    B) variant 2
+    C) variant 3
+    D) variant 4
+    Javob: B
+
+    Yoki oxirida alohida javoblar bloki:
+    Javoblar:
+    1. B
+    2. C
+    ...
+
+    Ikkalasi ham bo'lmasa, savol "javobsiz" deb xatolar ro'yxatiga qo'shiladi va o'tkazib yuboriladi.
+    """
+    question_start_re = re.compile(r'^(\d+)[\.\)]\s*(.*)$')
+    option_re = re.compile(r'^([A-DА-Г])[\.\)]\s*(.*)$', re.IGNORECASE)
+    answer_inline_re = re.compile(
+        r'^(?:✅\s*)?(?:to\'?g\'?ri\s*javob|javob|answer|жавоб|ответ)\s*[:\-]?\s*([A-DА-Г])\s*$',
+        re.IGNORECASE
+    )
+    answer_key_line_re = re.compile(r'^(?:✅\s*)?(?:javoblar|answers|жавоблар|ответы)\s*[:\-]?\s*$', re.IGNORECASE)
+    answer_key_item_re = re.compile(r'^(\d+)[\.\)\s]+([A-DА-Г])\s*$', re.IGNORECASE)
+
+    letter_map = {'А': 'A', 'В': 'B', 'С': 'C', 'Д': 'D'}  # Cyrillic look-alikes -> Latin
+
+    def normalize_letter(letter):
+        letter = letter.upper()
+        return letter_map.get(letter, letter)
+
+    raw_questions = []  # list of dicts: {number, text, options: {A,B,C,D}, correct_answer}
+    answer_key = {}  # number -> letter, collected from a separate "Javoblar:" block
+    errors = []
+
+    current = None
+    in_answer_key_block = False
+
+    for line in lines:
+        key_match = answer_key_line_re.match(line)
+        if key_match:
+            in_answer_key_block = True
+            continue
+
+        if in_answer_key_block:
+            item_match = answer_key_item_re.match(line)
+            if item_match:
+                num = int(item_match.group(1))
+                answer_key[num] = normalize_letter(item_match.group(2))
+                continue
+            else:
+                # a non-matching line ends the answer key block
+                in_answer_key_block = False
+
+        q_match = question_start_re.match(line)
+        if q_match:
+            if current:
+                raw_questions.append(current)
+            current = {
+                'number': int(q_match.group(1)),
+                'text': q_match.group(2).strip(),
+                'options': {},
+                'correct_answer': None,
+            }
+            continue
+
+        if current is None:
+            continue
+
+        opt_match = option_re.match(line)
+        if opt_match:
+            letter = normalize_letter(opt_match.group(1))
+            if letter in ('A', 'B', 'C', 'D'):
+                current['options'][letter] = opt_match.group(2).strip()
+            continue
+
+        ans_match = answer_inline_re.match(line)
+        if ans_match:
+            current['correct_answer'] = normalize_letter(ans_match.group(1))
+            continue
+
+        # Otherwise: treat as a continuation of the question text (multi-line question)
+        if not current['options']:
+            current['text'] = (current['text'] + ' ' + line).strip()
+
+    if current:
+        raw_questions.append(current)
+
+    parsed = []
+    for q in raw_questions:
+        correct = q['correct_answer'] or answer_key.get(q['number'])
+        missing_required = [l for l in ('A', 'B', 'C') if l not in q['options']]
+
+        if missing_required:
+            errors.append(f"{q['number']}-savol: {', '.join(missing_required)} varianti(lari) topilmadi, o'tkazib yuborildi.")
+            continue
+        if not q['text']:
+            errors.append(f"{q['number']}-savol: savol matni bo'sh, o'tkazib yuborildi.")
+            continue
+        if correct not in ('A', 'B', 'C', 'D'):
+            errors.append(f"{q['number']}-savol: to'g'ri javob aniqlanmadi, o'tkazib yuborildi.")
+            continue
+        if correct == 'D' and 'D' not in q['options']:
+            errors.append(f"{q['number']}-savol: to'g'ri javob D deb ko'rsatilgan, lekin D varianti yo'q, o'tkazib yuborildi.")
+            continue
+
+        parsed.append({
+            'text': q['text'],
+            'option_a': q['options']['A'],
+            'option_b': q['options']['B'],
+            'option_c': q['options']['C'],
+            'option_d': q['options'].get('D', ''),
+            'correct_answer': correct,
+        })
+
+    return parsed, errors
+
+
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.select_related('subject', 'level').all()
     serializer_class = QuestionAdminSerializer
@@ -711,6 +834,67 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if not is_main_admin(request.user):
             return Response({'detail': 'Sizga testni o‘chirishga ruxsat yo‘q.'}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['post'], url_path='import-docx')
+    def import_docx(self, request):
+        if not is_main_admin(request.user):
+            return Response({'detail': 'Sizga Word orqali test yaratishga ruxsat yo‘q.'}, status=status.HTTP_403_FORBIDDEN)
+
+        subject_id = request.data.get('subject')
+        level_id = request.data.get('level')
+        file_obj = request.FILES.get('file')
+
+        if not subject_id or not level_id:
+            return Response({'detail': 'Fan va daraja tanlanishi shart.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not file_obj:
+            return Response({'detail': 'Word (.docx) fayl yuborilmadi.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            subject = Subject.objects.get(id=subject_id)
+        except ObjectDoesNotExist:
+            return Response({'detail': 'Fan topilmadi.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            level = Level.objects.get(id=level_id, subject_id=subject_id)
+        except ObjectDoesNotExist:
+            return Response({'detail': 'Daraja topilmadi yoki tanlangan fanga tegishli emas.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            doc = DocxDocument(file_obj)
+        except Exception:
+            return Response({'detail': 'Word faylni o‘qib bo‘lmadi. Fayl .docx formatida ekanini tekshiring.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lines = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
+
+        parsed_questions, parse_errors = parse_docx_questions(lines)
+
+        if not parsed_questions:
+            return Response({
+                'detail': 'Word fayldan birorta ham savol topilmadi. Format namunasiga qarang.',
+                'errors': parse_errors,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        created_questions = []
+        with transaction.atomic():
+            for item in parsed_questions:
+                q = Question.objects.create(
+                    subject=subject,
+                    level=level,
+                    text=item['text'],
+                    option_a=item['option_a'],
+                    option_b=item['option_b'],
+                    option_c=item['option_c'],
+                    option_d=item['option_d'],
+                    correct_answer=item['correct_answer'],
+                )
+                created_questions.append(q)
+
+        serializer = QuestionAdminSerializer(created_questions, many=True)
+        return Response({
+            'created_count': len(created_questions),
+            'questions': serializer.data,
+            'errors': parse_errors,
+            'message': f'{len(created_questions)} ta savol "{subject.name} — {level.name}" ga qo‘shildi.'
+        })
 
 
 class ResultViewSet(viewsets.ReadOnlyModelViewSet):
