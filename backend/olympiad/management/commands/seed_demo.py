@@ -1278,6 +1278,37 @@ IT_TESTS = {
     ],
 }
 
+KOREAN_TESTS = {
+    "Boshlang'ich": [
+        ('내 이름은 지윤 __ .', '이에요', '있어요', '했어요', '이었어요', 'A'),
+        ('그 남자는 25살 __ .', '있다', '이다', '했다', '한다', 'B'),
+        ('나는 어제 친구를 __ .', '만났어요', '먹었어요', '읽었어요', '달렸어요', 'A'),
+        ('리나는 내일 아침에 출장을 __ .', '갔다', '가다', '갈 것이다', '가는 중이다', 'C'),
+        ('"15:30" koreys tilida?', '삼시 삼십분', '세시 세십분', '세시 삼십분', '세시 세십분', 'C'),
+        ("'이모' ning ma'nosi?", 'Amaki', 'Amma', 'Xola', "Tog'a", 'C'),
+        ("마흔 여덟 koreys tilida qanday bo'ladi?", '28', '38', '45', '48', 'D'),
+        ('나는 달리기를 10년째 __ .', '할거에요', '하고 있어요', '하고 싶어요', '했을 거에요', 'B'),
+        ('나는 여자친구와 자주 영화를 보러 __ .', '간데요', '갔나봐요', '가요', '가는 중이에요', 'C'),
+        ('눈이 언제부터 오기 시작했어요?', '한 시간 후에요.', '한 시간 전 부터 요', '한 시간 이요', '한 시간 동안이요', 'B'),
+        ('비가 얼마동안 왔어요?', '5시간 후에요', '하루 종일 이요', '내일 이요', '작년 8월 이요.', 'B'),
+        ('남동생 직업이 뭐에요?', "'서울에 살아요.'", "'여행 갔어요.'", "'선생님 이에요.'", "'노래 하기를 좋아해요.'", 'C'),
+        ('어디에 사세요?', '부산에 살았어요', '부산에 살거에요', '부산에 살아요', '부산에 사나봐요', 'C'),
+        ('지금 점심 식사를 __ .', '했었어요', '하고 있는 중 이에요', '했쟎아요', '해왔어요', 'B'),
+        ('나는 내일 지수와 극장을 _.', '갔어요', '가는 중 이에요', '가려고 해요', '갔었어요', 'C'),
+        ('모든 직원들은 사무실 ___ 있어요.', '안에', '밑에', '위에', '속에', 'A'),
+        ('나는 매운 음식을 _ 않아요.', '좋아해서', '좋아하지', '좋아 하지만', '좋아 하여', 'B'),
+        ('그는 오이를 _ 않아요', '먹는데', '먹어서', '먹지', '먹기를', 'C'),
+        ('시험이 __ ?', '작았어요?', '어려웠어요?', '좋았어요?', '높았어요?', 'B'),
+        ('에어컨을 _ 자나요?', '덮고', '안고', '켜고', '보고', 'C'),
+        ('한국어를 잘하고 싶으면 매일 연습을 __.', '해야 합니다', '하고 싶습니다', '할까요', '할 거예요', 'A'),
+        ("To'g'ri gapni tanlang.", '저는 비가 와서 우산을 가져갔어요.', '저는 비가 와서 우산을 가져가요 어제.', '저는 비가 와서 우산을 가져갈까요.', '저는 비가 와서 우산을 가져가고 싶어요 어제.', 'A'),
+        ('시험이 어렵__ 많은 학생들이 걱정하고 있습니다.', '아서', '지만', '으니까', '기 때문에', 'D'),
+        ("Ma'nosi to'g'ri bo'lgan gapni tanlang.", '저는 시간이 없어서 영화를 못 봤어요.', '저는 시간이 없지만 영화를 못 봤어요.', '저는 시간이 없거나 영화를 못 봤어요.', '저는 시간이 없는데 영화를 봤어요.', 'A'),
+        ('한국에 가 본 적이 있어요?', '네, 한국에 가고 있어요.', '네, 작년에 가 본 적이 있어요.', '네, 한국에 가고 싶어요.', '네, 한국에 갈까요?', 'B'),
+    ],
+}
+
+
 
 class Command(BaseCommand):
     help = "Demo adminni yaratadi, eski testlarni tozalaydi, Mental arifmetika, Ingliz tili 0-7-sinf va Qiyin, Rus tili boxcha, 2-3-4-5-6-7-8-9-10-sinf va Matematika 0-1-2-3-4-6-8-10-11-sinf testlarini qo‘shadi."
@@ -1415,10 +1446,30 @@ class Command(BaseCommand):
                 ])
                 it_count += len(questions)
 
+            korean_subject = Subject.objects.create(name='Koreys tili')
+            korean_count = 0
+            for level_name, questions in KOREAN_TESTS.items():
+                level = Level.objects.create(subject=korean_subject, name=level_name, duration_minutes=30)
+                Question.objects.bulk_create([
+                    Question(
+                        subject=korean_subject,
+                        level=level,
+                        text=item[0],
+                        option_a=item[1],
+                        option_b=item[2],
+                        option_c=item[3],
+                        option_d=item[4],
+                        correct_answer=item[5],
+                    )
+                    for item in questions
+                ])
+                korean_count += len(questions)
+
         self.stdout.write(self.style.SUCCESS('Admin login tayyor: ulugbek / codingwithulugbek20030313'))
-        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili, IT.'))
+        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili, IT, Koreys tili.'))
         self.stdout.write(self.style.SUCCESS(f'Ingliz tili testlari qo‘shildi: {question_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Rus tili testlari qo‘shildi: {rus_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Matematika testlari qo‘shildi: {math_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Arab tili testlari qo‘shildi: {arabic_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'IT testlari qo‘shildi: {it_count} ta savol.'))
+        self.stdout.write(self.style.SUCCESS(f'Koreys tili testlari qo‘shildi: {korean_count} ta savol.'))
