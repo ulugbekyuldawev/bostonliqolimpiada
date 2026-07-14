@@ -508,6 +508,8 @@ class StudentViewSet(viewsets.ModelViewSet):
                 return 'Arab tili'
             if lowered in ['matematika', 'math', 'mathematics']:
                 return 'Matematika'
+            if lowered in ['it', 'informatika', 'computer science', 'informationtexnologiyalari', 'axborot texnologiyalari']:
+                return 'IT'
             if 'mental' in lowered:
                 return 'Mental arifmetika'
             return raw
@@ -539,6 +541,9 @@ class StudentViewSet(viewsets.ModelViewSet):
                     return 'A1'
                 if lowered in ['a2', 'a 2']:
                     return 'A2'
+            if subject_name == 'IT':
+                if digits in ['1']:
+                    return '1-sinf'
             if subject_name == 'Mental arifmetika':
                 if '5' in digits or '5 yosh' in lowered:
                     return '5 yosh'

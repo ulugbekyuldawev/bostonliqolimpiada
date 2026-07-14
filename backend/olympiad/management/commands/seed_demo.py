@@ -1243,6 +1243,42 @@ ARABIC_TESTS = {
     ],
 }
 
+IT_TESTS = {
+    '1-sinf': [
+        ('HTML nima uchun ishlatiladi?', 'Veb-sahifa strukturasini yaratish uchun', 'Serverni boshqarish uchun', "Ma'lumotlar bazasini yaratish uchun", 'Rasm tahrirlash uchun', 'A'),
+        ("HTML qaysi so'zning qisqartmasi?", 'High Text Markup Language', 'HyperText Markup Language', 'Hyper Transfer Markup Language', 'Home Tool Markup Language', 'B'),
+        ('Веб-саҳифанинг асосий скелетини қайси тег ичига ёзамиз?', '<head>', '<html>', '<body>', '<meta>', 'B'),
+        ('Sahifa sarlavhasi (title) qaysi tegda yoziladi?', '<header>', '<title>', '<head>', '<h1>', 'B'),
+        ('Eng katta sarlavha tegi qaysi?', '<h6>', '<h1>', '<head>', '<title>', 'B'),
+        ('Paragraf (matn bandi) uchun qaysi teg ishlatiladi?', '<p>', '<div>', '<span>', '<text>', 'A'),
+        ("Rasm qo'yish uchun qaysi teg ishlatiladi?", '<image>', '<img>', '<pic>', '<src>', 'B'),
+        ('<img> tegida rasm manzili qaysi atribut orqali beriladi?', 'href', 'link', 'src', 'url', 'C'),
+        ('Havola (link) yaratish uchun qaysi teg ishlatiladi?', '<link>', '<a>', '<href>', '<url>', 'B'),
+        ('<a> tegida havola manzili qaysi atribut orqali beriladi?', 'src', 'href', 'link', 'target', 'B'),
+        ("Ro'yxat (tartiblangan bo'lmagan) uchun qaysi teg ishlatiladi?", '<ul>', '<ol>', '<li>', '<list>', 'A'),
+        ("Tartiblangan ro'yxat uchun qaysi teg ishlatiladi?", '<ul>', '<ol>', '<li>', '<list>', 'B'),
+        ("Ro'yxatdagi har bir element qaysi teg bilan belgilanadi?", '<item>', '<li>', '<row>', '<el>', 'B'),
+        ('Jadval yaratish uchun asosiy teg qaysi?', '<table>', '<grid>', '<tab>', '<tr>', 'A'),
+        ('Jadvalda qator (row) qaysi teg bilan yoziladi?', '<td>', '<tr>', '<th>', '<row>', 'B'),
+        ('Jadvalda katak (ustun) qaysi teg bilan yoziladi?', '<tr>', '<th>', '<td>', '<col>', 'C'),
+        ('CSS nima uchun ishlatiladi?', 'Sahifani stillash (dizayn berish) uchun', "Ma'lumotlarni saqlash uchun", 'Sahifani harakatga keltirish uchun', 'Serverga ulanish uchun', 'A'),
+        ("CSS qaysi so'zning qisqartmasi?", 'Creative Style Sheets', 'Cascading Style Sheets', 'Computer Style Sheets', 'Colorful Style Sheets', 'B'),
+        ('HTML faylga CSS ulash uchun qaysi teg ishlatiladi?', '<style>', '<link>', '<css>', "A va B ikkalasi ham to'g'ri", 'D'),
+        ("Matn rangini o'zgartiruvchi CSS xususiyati qaysi?", 'background-color', 'color', 'text-color', 'font-color', 'B'),
+        ("Fon rangini o'zgartiruvchi CSS xususiyati qaysi?", 'color', 'background-color', 'bg-color', 'fill', 'B'),
+        ("Shrift o'lchamini belgilaydigan CSS xususiyati qaysi?", 'text-size', 'font-weight', 'font-size', 'size', 'C'),
+        ("Elementning tashqi bo'shlig'ini (chetdagi masofani) belgilaydigan CSS xususiyati qaysi?", 'padding', 'margin', 'border', 'gap', 'B'),
+        ("Elementning ichki bo'shlig'ini (ichkaridagi masofani) belgilaydigan CSS xususiyati qaysi?", 'margin', 'padding', 'border', 'space', 'B'),
+        ('Elementga chegara (ramka) chizish uchun qaysi CSS xususiyati ishlatiladi?', 'border', 'outline', 'frame', 'edge', 'A'),
+        ("CSS'da klass (class) selektori qanday belgi bilan boshlanadi?", '#', '.', '@', '&', 'B'),
+        ("CSS'da id selektori qanday belgi bilan boshlanadi?", '.', '#', '@', '%', 'B'),
+        ('Shrift qalinligini (bold) belgilaydigan CSS xususiyati qaysi?', 'font-style', 'font-weight', 'text-weight', 'font-bold', 'B'),
+        ('Elementni ekrandan butunlay yashiradigan CSS xususiyati qaysi?', 'display: none;', 'visibility: small;', 'hide: true;', 'opacity: hide;', 'A'),
+        ("CSS'da matnni markazga tekislash uchun qaysi xususiyat ishlatiladi?", 'align: center;', 'text-align: center;', 'center: true;', 'position: center;', 'B'),
+    ],
+}
+
+
 class Command(BaseCommand):
     help = "Demo adminni yaratadi, eski testlarni tozalaydi, Mental arifmetika, Ingliz tili 0-7-sinf va Qiyin, Rus tili boxcha, 2-3-4-5-6-7-8-9-10-sinf va Matematika 0-1-2-3-4-6-8-10-11-sinf testlarini qo‘shadi."
 
@@ -1360,9 +1396,29 @@ class Command(BaseCommand):
                 ])
                 arabic_count += len(questions)
 
+            it_subject = Subject.objects.create(name='IT')
+            it_count = 0
+            for level_name, questions in IT_TESTS.items():
+                level = Level.objects.create(subject=it_subject, name=level_name, duration_minutes=30)
+                Question.objects.bulk_create([
+                    Question(
+                        subject=it_subject,
+                        level=level,
+                        text=item[0],
+                        option_a=item[1],
+                        option_b=item[2],
+                        option_c=item[3],
+                        option_d=item[4],
+                        correct_answer=item[5],
+                    )
+                    for item in questions
+                ])
+                it_count += len(questions)
+
         self.stdout.write(self.style.SUCCESS('Admin login tayyor: ulugbek / codingwithulugbek20030313'))
-        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili.'))
+        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili, IT.'))
         self.stdout.write(self.style.SUCCESS(f'Ingliz tili testlari qo‘shildi: {question_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Rus tili testlari qo‘shildi: {rus_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Matematika testlari qo‘shildi: {math_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Arab tili testlari qo‘shildi: {arabic_count} ta savol.'))
+        self.stdout.write(self.style.SUCCESS(f'IT testlari qo‘shildi: {it_count} ta savol.'))
