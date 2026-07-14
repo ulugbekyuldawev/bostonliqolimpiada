@@ -498,7 +498,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         def normalize_subject_name(value):
             raw = str(value or '').strip()
-            lowered = raw.lower().replace('‘', "'").replace('’', "'")
+            lowered = raw.lower().replace('‘', "'").replace('’', "'").replace('ʻ', "'").replace('`', "'")
             lowered = ' '.join(lowered.split())
             if lowered in ['ingliz', 'ingliz tili', 'english']:
                 return 'Ingliz tili'
@@ -508,7 +508,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         def normalize_level_name(subject_name, value):
             raw = str(value or '').strip()
-            lowered = raw.lower().replace('‘', "'").replace('’', "'")
+            lowered = raw.lower().replace('‘', "'").replace('’', "'").replace('ʻ', "'").replace('`', "'")
             lowered = ' '.join(lowered.replace('_', '-').split())
             digits = ''.join(ch for ch in lowered if ch.isdigit())
             if subject_name == 'Ingliz tili':
@@ -517,9 +517,11 @@ class StudentViewSet(viewsets.ModelViewSet):
                 if digits in ['0', '1', '2', '3', '4', '5', '6', '7']:
                     return f'{digits}-sinf'
             if subject_name == 'Rus tili':
+                if lowered in ['boshlangich', "boshlang'ich", 'boshlang‘ich', 'boshlangʻich']:
+                    return "Boshlang'ich"
                 if lowered in ['boxcha', 'bogcha', 'boqcha', 'maktabgacha']:
                     return 'boxcha'
-                if digits in ['2', '3', '4', '5', '6', '7', '8', '9', '10']:
+                if digits in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']:
                     return f'{digits}-sinf'
             if subject_name == 'Matematika':
                 if digits in ['0', '1', '2', '3', '4', '6', '8', '10', '11']:
