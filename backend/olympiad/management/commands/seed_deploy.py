@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from olympiad.models import Center, Level, Question, Subject
-from .seed_demo import ENGLISH_TESTS, MATH_TESTS, RUS_TESTS, ARABIC_TESTS, IT_TESTS, KOREAN_TESTS
+from .seed_demo import ENGLISH_TESTS, MATH_TESTS, RUS_TESTS, ARABIC_TESTS, IT_TESTS, KOREAN_TESTS, ONA_TILI_TESTS
 
 
 class Command(BaseCommand):
@@ -84,6 +84,7 @@ class Command(BaseCommand):
             seed_subject('Arab tili', ARABIC_TESTS, 30)
             seed_subject('IT', IT_TESTS, 30)
             seed_subject('Koreys tili', KOREAN_TESTS, 30)
+            seed_subject('Ona tili', ONA_TILI_TESTS, 30)
 
         self.stdout.write(self.style.SUCCESS(f'Deploy seed tayyor. Testlar tekshirildi/yangilandi: {total} ta.'))
         self.stdout.write(self.style.SUCCESS('Admin: ulugbek / codingwithulugbek20030313'))

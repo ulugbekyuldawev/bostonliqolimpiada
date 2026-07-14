@@ -512,6 +512,8 @@ class StudentViewSet(viewsets.ModelViewSet):
                 return 'IT'
             if lowered in ['koreys', 'koreys tili', 'korean', 'koreyscha']:
                 return 'Koreys tili'
+            if lowered in ['ona tili', 'ona-tili', 'onatili', 'uzbek tili', "o'zbek tili"]:
+                return 'Ona tili'
             if 'mental' in lowered:
                 return 'Mental arifmetika'
             return raw
@@ -549,6 +551,9 @@ class StudentViewSet(viewsets.ModelViewSet):
             if subject_name == 'Koreys tili':
                 if lowered in ['boshlangich', "boshlang'ich", 'boshlang‘ich', 'boshlangʻich']:
                     return "Boshlang'ich"
+            if subject_name == 'Ona tili':
+                if digits in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']:
+                    return f'{digits}-sinf'
             if subject_name == 'Mental arifmetika':
                 if '5' in digits or '5 yosh' in lowered:
                     return '5 yosh'

@@ -1404,6 +1404,32 @@ KOREAN_TESTS = {
     ],
 }
 
+ONA_TILI_TESTS = {
+    '5-sinf': [
+        ("Qaysi qatorda barcha so'zlar ot turkumiga mansub?", 'yugurmoq, yaxshi, daryo', "bilim, go'zallik, Vatan", 'chiroyli, daraxt, uy', "o'qimoq, kitob, maktab", 'B'),
+        ('Qaysi gapda sifat aniqlovchi vazifasida kelgan?', 'Osmon juda moviy.', 'Bulutlar suzmoqda.', 'Bulutlar oqarib ketdi.', 'Oq bulutlar osmonni qopladi.', 'D'),
+        ("Qaysi so'z yasama so'z?", "tog'", 'dala', 'paxta', 'paxtazor', 'D'),
+        ("Qaysi qatorda faqat tub so'zlar berilgan?", "o'quvchi, paxtakor, bog'bon", 'gulzor, ishchi, paxtazor', 'kitob, daraxt, gul', 'bilimdon, yozuvchi, terimchi', 'C'),
+        ("Qaysi so'zda egalik qo'shimchasi bor?", 'kitobga', 'kitobdan', 'kitoblar', 'kitobim', 'D'),
+        ('Qaysi gapda ega tushirib qoldirilgan?', "O'quvchilar keldi.", 'Daraxt gulladi.', "Kitob o'qidim.", 'Men maktabga bordim.', 'C'),
+        ("“Mehribon” so'zi qanday usulda yasalgan?", "Qo'shma", 'Takror', 'Juft', "Qo'shimcha qo'shish", 'D'),
+        ('Qaysi qatorda sinonimlar berilgan?', 'baland – past', 'tez – sekin', 'oq – qora', 'katta – ulkan', 'D'),
+        ('Antonimlar qatorini toping.', 'oz – kam', "go'zal – chiroyli", 'shirin – achchiq', 'ulkan – katta', 'C'),
+        ("Qaysi so'z ko'chma ma'noda qo'llangan?", 'Oltin kuz.', 'Sovuq suv.', 'Temir darvoza.', 'Qalin kitob.', 'A'),
+        ('Qaysi gap darak gap?', 'Kitobni ol!', "Men kitob o'qidim.", 'Qani endi!', 'Kitobni oldingmi?', 'B'),
+        ("Qaysi so'z fe'l hisoblanadi?", "o'qituvchi", "o'qimoq", "o'qish", "o'quvchi", 'B'),
+        ('Qaysi qatorda faqat sifatlar berilgan?', 'keng, baland, chiroyli', 'yugurmoq, baland, oq', 'uy, katta, daraxt', 'gul, yaxshi, yurmoq', 'A'),
+        ("“Bolalar bog'da o'ynashdi.” Gapdagi holni toping.", "bog'da", "o'ynashdi", 'bolalar', "yo'q", 'A'),
+        ('Qaysi qatorda faqat olmoshlar berilgan?', 'biz, maktab, ular', 'men, sen, ular', 'men, kitob, u', 'u, chiroyli, ular', 'B'),
+        ("Qaysi qo'shimcha ko'plik qo'shimchasi?", '-ni', '-dan', '-lar', '-ga', 'C'),
+        ("Qaysi so'zda jo'nalish kelishigi bor?", 'maktabni', 'maktabga', 'maktabdan', 'maktabda', 'B'),
+        ('Qaysi qatorda undalma mavjud?', "Aziz do'stim, seni kutdim.", 'Men seni kutdim.', "Do'stim keldi.", 'Biz bordik.', 'A'),
+        ("Qaysi so'z ravish?", 'tez', 'tezlik', 'tezlatuvchi', 'tezlashmoq', 'A'),
+        ("Qaysi gapda tinish belgisi to'g'ri qo'yilgan?", "Aziz, do'stim kel.", "Aziz do'stim kel!", "Aziz do'stim, kel.", "Aziz do'stim kel.", 'C'),
+    ],
+}
+
+
 
 
 class Command(BaseCommand):
@@ -1561,11 +1587,31 @@ class Command(BaseCommand):
                 ])
                 korean_count += len(questions)
 
+            ona_tili_subject = Subject.objects.create(name='Ona tili')
+            ona_tili_count = 0
+            for level_name, questions in ONA_TILI_TESTS.items():
+                level = Level.objects.create(subject=ona_tili_subject, name=level_name, duration_minutes=30)
+                Question.objects.bulk_create([
+                    Question(
+                        subject=ona_tili_subject,
+                        level=level,
+                        text=item[0],
+                        option_a=item[1],
+                        option_b=item[2],
+                        option_c=item[3],
+                        option_d=item[4],
+                        correct_answer=item[5],
+                    )
+                    for item in questions
+                ])
+                ona_tili_count += len(questions)
+
         self.stdout.write(self.style.SUCCESS('Admin login tayyor: ulugbek / codingwithulugbek20030313'))
-        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili, IT, Koreys tili.'))
+        self.stdout.write(self.style.SUCCESS('Fanlar tayyor: Mental arifmetika (5 yosh, 6 yosh, 8 yosh, 9 yosh), Ingliz tili, Rus tili, Matematika, Arab tili, IT, Koreys tili, Ona tili.'))
         self.stdout.write(self.style.SUCCESS(f'Ingliz tili testlari qo‘shildi: {question_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Rus tili testlari qo‘shildi: {rus_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Matematika testlari qo‘shildi: {math_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Arab tili testlari qo‘shildi: {arabic_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'IT testlari qo‘shildi: {it_count} ta savol.'))
         self.stdout.write(self.style.SUCCESS(f'Koreys tili testlari qo‘shildi: {korean_count} ta savol.'))
+        self.stdout.write(self.style.SUCCESS(f'Ona tili testlari qo‘shildi: {ona_tili_count} ta savol.'))
