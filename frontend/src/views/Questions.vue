@@ -93,6 +93,33 @@
     </div>
 
     <div v-if="mainAdmin" class="panel mt">
+      <h3>Yangi fan qo‘shish</h3>
+      <form @submit.prevent="createSubject" class="form-grid create-subject-grid">
+        <label>Fan nomi <input v-model="subjectForm.name" required placeholder="Masalan: Fizika" /></label>
+        <button class="primary-btn">Fan qo‘shish</button>
+      </form>
+      <p v-if="subjectMessage" class="success-box">{{ subjectMessage }}</p>
+      <p v-if="subjectError" class="error-box">{{ subjectError }}</p>
+    </div>
+
+    <div v-if="mainAdmin" class="panel mt">
+      <h3>Yangi daraja qo‘shish</h3>
+      <form @submit.prevent="createLevel" class="form-grid create-level-grid">
+        <label>Fan
+          <select v-model="levelForm.subject" required>
+            <option value="">Tanlang</option>
+            <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </label>
+        <label>Daraja nomi <input v-model="levelForm.name" required placeholder="Masalan: 5-sinf yoki A1" /></label>
+        <label>Davomiyligi (daqiqa) <input v-model.number="levelForm.duration_minutes" type="number" min="1" required /></label>
+        <button class="primary-btn">Daraja qo‘shish</button>
+      </form>
+      <p v-if="levelMessage" class="success-box">{{ levelMessage }}</p>
+      <p v-if="levelError" class="error-box">{{ levelError }}</p>
+    </div>
+
+    <div v-if="mainAdmin" class="panel mt">
       <h3>Yangi savol qo‘shish</h3>
       <form @submit.prevent="createQuestion" class="form-grid create-question-grid">
         <label>Fan
@@ -156,6 +183,14 @@ const form = reactive({
   option_d: '',
   correct_answer: 'A'
 })
+
+const subjectForm = reactive({ name: '' })
+const subjectMessage = ref('')
+const subjectError = ref('')
+
+const levelForm = reactive({ subject: '', name: '', duration_minutes: 30 })
+const levelMessage = ref('')
+const levelError = ref('')
 
 const questionCountsBySubject = computed(() => {
   const counts = new Map()
@@ -255,6 +290,37 @@ async function loadData() {
     error.value = JSON.stringify(e.response?.data || 'Testlarni yuklashda xatolik yuz berdi.')
   } finally {
     loading.value = false
+  }
+}
+
+async function createSubject() {
+  subjectMessage.value = ''
+  subjectError.value = ''
+  try {
+    await api.post('/subjects/', { name: subjectForm.name })
+    subjectForm.name = ''
+    subjectMessage.value = 'Fan qo‘shildi.'
+    await loadData()
+  } catch (e) {
+    subjectError.value = JSON.stringify(e.response?.data || 'Fan qo‘shishda xatolik yuz berdi.')
+  }
+}
+
+async function createLevel() {
+  levelMessage.value = ''
+  levelError.value = ''
+  try {
+    await api.post('/levels/', {
+      subject: levelForm.subject,
+      name: levelForm.name,
+      duration_minutes: levelForm.duration_minutes
+    })
+    levelForm.name = ''
+    levelForm.duration_minutes = 30
+    levelMessage.value = 'Daraja qo‘shildi.'
+    await loadData()
+  } catch (e) {
+    levelError.value = JSON.stringify(e.response?.data || 'Daraja qo‘shishda xatolik yuz berdi.')
   }
 }
 
@@ -437,6 +503,23 @@ onMounted(loadData)
 
 .create-question-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.create-subject-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.create-level-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+}
+
+@media (max-width: 700px) {
+  .create-subject-grid,
+  .create-level-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .full-span {
