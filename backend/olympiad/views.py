@@ -951,7 +951,7 @@ class ResultViewSet(viewsets.ReadOnlyModelViewSet):
         ws.title = 'Natijalar'
 
         headers = [
-            '№', 'Ism Familya', 'Fan', 'Sinfi', 'Status code',
+            '№', 'Ism Familya', "O‘quv markaz", 'Fan', 'Sinfi', 'Status code',
             'Nechta to‘g‘ri', 'Jami savollar', 'Foiz', 'Boshlangan vaqti',
             'Tugatgan vaqti', 'Sarflagan vaqt'
         ]
@@ -968,6 +968,7 @@ class ResultViewSet(viewsets.ReadOnlyModelViewSet):
             ws.append([
                 idx,
                 result.student.full_name,
+                result.student.center.name if result.student.center else '',
                 result.student.subject.name,
                 result.student.level.name,
                 result.student.code,

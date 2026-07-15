@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>Natijalar</h2>
-        <p>Test va mental arifmetika natijalari: o‘quvchi, fan, sinf, nechtadan nechta to‘g‘ri va foiz</p>
+        <p>Test va mental arifmetika natijalari: o‘quvchi, o‘quv markaz, fan, sinf, nechtadan nechta to‘g‘ri va foiz</p>
       </div>
       <button class="primary-btn" @click="downloadExcel">Natijalarni Excelga yuklash</button>
     </div>
@@ -19,6 +19,7 @@
             <tr>
               <th>№</th>
               <th>O‘quvchi</th>
+              <th>O‘quv markaz</th>
               <th>Fan</th>
               <th>Sinfi</th>
               <th>Code</th>
@@ -31,6 +32,7 @@
             <tr v-for="(r, i) in results" :key="r.id">
               <td>{{ i + 1 }}</td>
               <td><b>{{ r.student_full_name }}</b></td>
+              <td>{{ r.center_name || '—' }}</td>
               <td>{{ r.subject_name }}</td>
               <td>{{ r.level_name }}</td>
               <td>{{ r.student_code }}</td>
@@ -39,7 +41,7 @@
               <td>{{ formatSeconds(r.spent_seconds) }}</td>
             </tr>
             <tr v-if="!results.length">
-              <td colspan="8" class="empty-cell">Natija topilmadi</td>
+              <td colspan="9" class="empty-cell">Natija topilmadi</td>
             </tr>
           </tbody>
         </table>
